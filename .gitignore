@@ -1,0 +1,18 @@
+# Python-generated files
+__pycache__/
+*.py[oc]
+build/
+dist/
+wheels/
+*.egg-info
+.coverage
+coverage.xml
+htmlcov/
+
+# Virtual environments
+.venv
+
+twisted/*.sqlite3
+
+.env
+db.sqlite3

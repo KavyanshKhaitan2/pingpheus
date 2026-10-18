@@ -1,0 +1,22 @@
+[project]
+name = "pingpheus"
+version = "0.1.0"
+description = "Add your description here"
+readme = "README.md"
+authors = [
+    { name = "KavyanshKhaitan2", email = "kavyanshkhaitan11@gmail.com" }
+]
+requires-python = ">=3.13"
+dependencies = [
+    "fastapi[standard]>=0.143.2",
+    "python-dotenv>=1.2.4",
+    "slack-bolt>=1.30.0",
+    "tortoise-orm[psycopg]>=1.1.9",
+]
+
+[project.scripts]
+pingpheus = "pingpheus:main"
+
+[build-system]
+requires = ["uv_build>=0.12.7,<0.13.0"]
+build-backend = "uv_build"
