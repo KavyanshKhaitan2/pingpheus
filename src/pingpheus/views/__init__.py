@@ -1,4 +1,4 @@
-from .home import open_app_home
+from . import home, new_pingword
 from ..settings import app
 
 @app.message('pingpheus_please_test_views_for_me')
