@@ -1,11 +1,69 @@
 from ..settings import app
+from ..models import PingPhrase
 
 
 @app.event("app_home_opened")
-def open_app_home(ack, event):
+async def open_app_home(ack, event):
     ack()
-    app.client.views_publish(
-        user_id=event["user"],
+    await _open_app_home(event["user"])
+
+
+
+async def _open_app_home(user_id):
+    inner_blocks: list[dict] = []
+
+    for phrase in await PingPhrase.filter(owner=user_id):
+        text = "*" + ", ".join(phrase.comma_seperated_words.split(",")) + "*"
+        if phrase.whitelisted_user_ids:
+            text += "\nOnly when sent by "
+            text += ", ".join([f"<@{x}>" for x in phrase.whitelisted_user_ids])
+        else:
+            text += "\nWhen sent by any user"
+        if phrase.whitelisted_conversation_ids:
+            text += "\nOnly when sent in "
+            text += ", ".join([f"<#{x}>" for x in phrase.whitelisted_conversation_ids])
+        else:
+            text += "\nWhen sent in any channel"
+        inner_blocks.append(
+            {
+                "type": "section",
+                "text": {
+                    "type": "mrkdwn",
+                    "text": text,
+                },
+                "accessory": {
+                    "type": "button",
+                    "text": {
+                        "type": "plain_text",
+                        "text": "Actions",
+                        "emoji": True,
+                    },
+                    "value": str(phrase.id),
+                    "action_id": "apphome_pingphrase_action",
+                },
+            },
+        )
+
+    if not inner_blocks:
+        inner_blocks.append(
+            {
+                "type": "rich_text",
+                "elements": [
+                    {
+                        "type": "rich_text_section",
+                        "elements": [
+                            {
+                                "type": "text",
+                                "text": "No pingphrases found, create a new one!",
+                            }
+                        ],
+                    }
+                ],
+            }
+        )
+
+    await app.client.views_publish(
+        user_id=user_id,
         # A simple view payload for a modal
         view={
             "type": "home",
@@ -30,20 +88,7 @@ def open_app_home(ack, event):
                     "type": "context",
                     "elements": [{"type": "mrkdwn", "text": "Your pingwords"}],
                 },
-                {
-                    "type": "section",
-                    "text": {"type": "mrkdwn", "text": "Insert pingword here"},
-                    "accessory": {
-                        "type": "button",
-                        "text": {
-                            "type": "plain_text",
-                            "text": "Actions",
-                            "emoji": True,
-                        },
-                        "value": "click_me_123",
-                        "action_id": "button-action",
-                    },
-                },
+                *inner_blocks,
             ],
         },
     )

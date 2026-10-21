@@ -20,3 +20,6 @@ Created this cool-looking modal.
 
 ## Tue Oct 20 2026 04:52:06 PM (UTC+05:30) (3h 24m logged)
 I have refactored some of the code, and also made the buttons not clear the rest of the form. I also have some logic to parse the inputs of the form now. I hate how Slack outputs a `state` object, but doesnt let us put that back into the form when we need to.
+
+## Wed Oct 21 2026 10:31:03 AM (UTC+05:30) (4h 45m logged)
+Okay, so I've added the subscriptions thing and set up migrations. This means tortoise can actually make migrations and create the database.

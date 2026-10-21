@@ -2,10 +2,10 @@ from . import home, new_pingword
 from ..settings import app
 
 @app.message('pingpheus_please_test_views_for_me')
-def handle_message_b(ack, message, say):
-    ack()
-    say(f"Hi <@{message['user']}>!\nClick on the buttons below to test views.")
-    say(
+async def handle_message_b(ack, message, say):
+    await ack()
+    await say(f"Hi <@{message['user']}>!\nClick on the buttons below to test views.")
+    await say(
         text="Click to test views.",
         blocks=[
             {

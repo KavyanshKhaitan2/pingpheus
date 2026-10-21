@@ -1,7 +1,11 @@
+import json
+import asyncio
 from dataclasses import dataclass
 
 from ..settings import app
+from .. import models
 
+from .home import _open_app_home
 
 @dataclass
 class PingwordModalState:
@@ -12,7 +16,9 @@ class PingwordModalState:
     ping_from_apps: bool = False
 
 
-def get_state_from_slack_view(slack_view, ping_from_people=True, ping_from_apps=False):
+def get_state_from_slack_view(
+    slack_view, ping_from_people=True, ping_from_apps=False
+) -> PingwordModalState:
     slack_state = slack_view["state"]["values"]
 
     pingwords = [
@@ -81,7 +87,6 @@ def _draw_pingword_modal(state: PingwordModalState | None = None):
     if not state.user_ids:
         del users_select["accessory"]["initial_users"]
 
-
     return {
         "type": "modal",
         "callback_id": "new_pingword_modal",
@@ -92,6 +97,12 @@ def _draw_pingword_modal(state: PingwordModalState | None = None):
         },
         "submit": {"type": "plain_text", "text": "Submit", "emoji": True},
         "close": {"type": "plain_text", "text": "Cancel", "emoji": True},
+        "private_metadata": json.dumps(
+            {
+                "ping_from_people": state.ping_from_people,
+                "ping_from_apps": state.ping_from_apps,
+            }
+        ),
         "blocks": [
             {
                 "type": "input",
@@ -152,28 +163,43 @@ def _draw_pingword_modal(state: PingwordModalState | None = None):
 
 
 @app.action("apphome_new_pingword")
-def create_new_pingword(ack, body):
+async def create_new_pingword(ack, body):
     view = _draw_pingword_modal()
-    app.client.views_open(
-        # Pass a valid trigger_id within 3 seconds of receiving it
-        trigger_id=body["trigger_id"],
-        view=view,
+    await asyncio.gather(
+        app.client.views_open(
+            # Pass a valid trigger_id within 3 seconds of receiving it
+            trigger_id=body["trigger_id"],
+            view=view,
+        ),
+        ack(),
     )
-    ack()
 
 
 @app.action({"block_id": "apphome_new_pingword-ping_from"})
-def ping_from_people(ack, body):
-    ping_from_people, ping_from_apps = [x == 'True' for x in body["actions"][0]["value"].split(",")]
+async def toggle_ping_buttons(ack, body):
+    ack()
+    ping_from_people, ping_from_apps = [
+        x == "True" for x in body["actions"][0]["value"].split(",")
+    ]
     state = get_state_from_slack_view(
         body["view"], ping_from_people=ping_from_people, ping_from_apps=ping_from_apps
     )
     view = _draw_pingword_modal(state)
-    app.client.views_update(view_id=body["view"]["id"], view=view)
-    ack()
+    await app.client.views_update(view_id=body["view"]["id"], view=view)
 
 
 @app.view("new_pingword_modal")
-def submit_new_pingword_modal(ack, body):
-    ack()
-    print(body)
+async def submit_new_pingword_modal(ack, body, logger):
+    await ack()
+    slack_view = body["view"]
+    metadata = json.loads(slack_view["private_metadata"])
+    ping_from_people = metadata["ping_from_people"]
+    ping_from_apps = metadata["ping_from_apps"]
+    state = get_state_from_slack_view(
+        slack_view, ping_from_people=ping_from_people, ping_from_apps=ping_from_apps
+    )
+    user_id = body['user']['id']
+    
+    pingphrase = models.PingPhrase(owner=user_id, comma_seperated_words = ','.join(state.pingwords), whitelisted_conversation_ids = state.conversation_ids, whitelisted_user_ids = state.user_ids)
+    await pingphrase.save()
+    await _open_app_home(user_id)

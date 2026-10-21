@@ -3,12 +3,12 @@ from contextlib import asynccontextmanager
 
 from fastapi import FastAPI, Request
 from fastapi.responses import RedirectResponse
-from slack_bolt.adapter.fastapi import SlackRequestHandler
+from slack_bolt.adapter.fastapi.async_handler import AsyncSlackRequestHandler
 from tortoise.contrib.fastapi import tortoise_exception_handlers
 
 from . import models, settings
 from .settings import app
-from . import views
+from . import views, subscriptions
 
 
 @asynccontextmanager
@@ -21,7 +21,7 @@ async def lifespan(api: FastAPI) -> AsyncGenerator[None]:
 
 # Initialize Slack app and request handler
 
-handler = SlackRequestHandler(app)
+handler = AsyncSlackRequestHandler(app)
 
 api = FastAPI(
     lifespan=lifespan,
