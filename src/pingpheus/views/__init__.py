@@ -1,5 +1,7 @@
-from . import home, new_pingword
 from ..settings import app
+from . import home as home
+from . import new_pingword as new_pingword
+
 
 @app.message('pingpheus_please_test_views_for_me')
 async def handle_message_b(ack, message, say):

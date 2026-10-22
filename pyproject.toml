@@ -13,6 +13,7 @@ dependencies = [
     "python-dotenv>=1.2.4",
     "slack-bolt>=1.30.0",
     "tortoise-orm[psycopg]>=1.1.9",
+    "websockets>=17.2",
 ]
 
 [project.scripts]

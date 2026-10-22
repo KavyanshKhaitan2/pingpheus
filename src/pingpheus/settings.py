@@ -1,3 +1,4 @@
+import logging
 import os
 from functools import partial
 
@@ -5,9 +6,6 @@ from dotenv import load_dotenv
 from slack_bolt.async_app import AsyncApp
 from tortoise.config import AppConfig, DBUrlConfig, TortoiseConfig
 from tortoise.contrib.fastapi import RegisterTortoise
-
-import logging
-
 
 load_dotenv()
 
@@ -20,6 +18,9 @@ DEBUG = os.environ["DEBUG"].lower().strip() in ['true', 'on', 'yes', '1', 'enabl
 
 SLACK_BOT_TOKEN = os.environ["SLACK_BOT_TOKEN"]
 SLACK_SIGNING_SECRET = os.environ["SLACK_SIGNING_SECRET"]
+
+XOXC_USER_TOKEN = os.environ["XOXC_USER_TOKEN"]
+XOXD_USER_TOKEN = os.environ["XOXD_USER_TOKEN"]
 
 app = AsyncApp(
     token=SLACK_BOT_TOKEN,

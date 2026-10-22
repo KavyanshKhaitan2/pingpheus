@@ -1,11 +1,11 @@
-import json
 import asyncio
+import json
 from dataclasses import dataclass
 
-from ..settings import app
 from .. import models
-
+from ..settings import app
 from .home import _open_app_home
+
 
 @dataclass
 class PingwordModalState:

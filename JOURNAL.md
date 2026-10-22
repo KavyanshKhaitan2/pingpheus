@@ -23,3 +23,17 @@ I have refactored some of the code, and also made the buttons not clear the rest
 
 ## Wed Oct 21 2026 10:31:03 AM (UTC+05:30) (4h 45m logged)
 Okay, so I've added the subscriptions thing and set up migrations. This means tortoise can actually make migrations and create the database.
+
+## Wed Oct 21 2026 06:07:57 PM (UTC+05:30)
+I think I have ran into an issue. I cant subscribe to all public channels without the bot being in them.
+
+The Slack user client temporarily subscribes to channels when you visit them. I feel like this can be used to bypass this issue.
+
+## Thu Oct 22 2026 05:28:11 PM (UTC+05:30) (6h 32m logged)
+I think I figured something out! You know when you open Slack, and go to a public channel you aren't in and you can see live messages? Yeah! Slack uses a `temp_channel_sub` event to temporarily subscribe to those channels while your Slack is open. Turns out, those channels *stay subscribed to* even when you switch to a different channel.
+
+Abusing this, its possible to list all public channels, and subscribe to each one. This is surprisingly fast and takes around 20-25 seconds to subscribe to all channels. After you're subscribed, you get all messages in all public channels *instantly*.
+
+The thing that takes the longest time to subscribe to all channels is listing all 18.5k channels, since Slack only sends 1000 channels per request, and to get more channels you must use the `nextCursor` you get from the response and put it in the next request. So, you gotta wait for the 20 requests to complete.
+
+This means you get *all* events going on on Slack, including when a new member joins, leaves, or someone types in any channels, while we wont be using these for now, its useful to know we can do this.

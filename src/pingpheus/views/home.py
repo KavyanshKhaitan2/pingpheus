@@ -1,5 +1,5 @@
-from ..settings import app
 from ..models import PingPhrase
+from ..settings import app
 
 
 @app.event("app_home_opened")

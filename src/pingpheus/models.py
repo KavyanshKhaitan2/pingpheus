@@ -1,6 +1,6 @@
+from tortoise import fields
 from tortoise.models import Model
-from tortoise import fields, Tortoise
-from .settings import DATABASE_URL
+
 
 class PingPhrase(Model):
     # Defining `id` field is optional, it will be defined automatically

@@ -2,13 +2,11 @@ from collections.abc import AsyncGenerator
 from contextlib import asynccontextmanager
 
 from fastapi import FastAPI, Request
-from fastapi.responses import RedirectResponse
 from slack_bolt.adapter.fastapi.async_handler import AsyncSlackRequestHandler
 from tortoise.contrib.fastapi import tortoise_exception_handlers
 
-from . import models, settings
+from . import settings
 from .settings import app
-from . import views, subscriptions
 
 
 @asynccontextmanager
