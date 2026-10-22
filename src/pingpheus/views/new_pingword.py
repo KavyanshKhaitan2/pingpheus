@@ -203,3 +203,4 @@ async def submit_new_pingword_modal(ack, body, logger):
     pingphrase = models.PingPhrase(owner=user_id, comma_seperated_words = ','.join(state.pingwords), whitelisted_conversation_ids = state.conversation_ids, whitelisted_user_ids = state.user_ids)
     await pingphrase.save()
     await _open_app_home(user_id)
+    logger.info(f"<@{user_id}> has created a new pingphrase: {pingphrase}")

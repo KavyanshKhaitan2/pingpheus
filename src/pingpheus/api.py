@@ -5,7 +5,7 @@ from fastapi import FastAPI, Request
 from slack_bolt.adapter.fastapi.async_handler import AsyncSlackRequestHandler
 from tortoise.contrib.fastapi import tortoise_exception_handlers
 
-from . import settings
+from . import settings, views  # noqa
 from .settings import app
 
 
