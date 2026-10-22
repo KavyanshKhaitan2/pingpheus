@@ -37,3 +37,5 @@ Abusing this, its possible to list all public channels, and subscribe to each on
 The thing that takes the longest time to subscribe to all channels is listing all 18.5k channels, since Slack only sends 1000 channels per request, and to get more channels you must use the `nextCursor` you get from the response and put it in the next request. So, you gotta wait for the 20 requests to complete.
 
 This means you get *all* events going on on Slack, including when a new member joins, leaves, or someone types in any channels, while we wont be using these for now, its useful to know we can do this.
+
+The next thing I am gonna do is figure out a way to send these events to Slack bolt so I can use all the fancy cool features without having to do anything myself.
