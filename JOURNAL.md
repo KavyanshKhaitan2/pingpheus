@@ -39,3 +39,10 @@ The thing that takes the longest time to subscribe to all channels is listing al
 This means you get *all* events going on on Slack, including when a new member joins, leaves, or someone types in any channels, while we wont be using these for now, its useful to know we can do this.
 
 The next thing I am gonna do is figure out a way to send these events to Slack bolt so I can use all the fancy cool features without having to do anything myself.
+
+# Fri Oct 23 2026 09:53:42 PM (UTC+05:30) (7h 27m logged)
+I've refactored a the entire custom user-client thingy!
+
+Now the main implementation lives at `websockets.py` as a reusable `SlackWebsocketClient` class.
+
+This means the code is way cleaner and easier to understand now, as most of the stuff going on with websockets can be abstracted away.
