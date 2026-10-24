@@ -1,3 +1,4 @@
+import inspect
 import json
 from collections.abc import Callable
 
@@ -42,13 +43,25 @@ class SlackWebsocketClient:
         self.event_listeners.append((None, arg))
         return arg
 
+    async def _send_event(self, event, websocket, data):
+        for _event, callable in self.event_listeners:
+            if _event == event or _event is None:
+                params = list(inspect.signature(callable).parameters.keys())
+                args = {}
+                if 'event' in params:
+                    args['event'] = event
+                if 'websocket' in params:
+                    args['websocket'] = websocket
+                if 'data' in params:
+                    args['data'] = data
+                await callable(**args)
+
+    
     async def connect(self):
         url = await self.get_url()
         headers = await self.get_additional_headers()
         async with websockets.connect(url, additional_headers=headers) as websocket:
-            for event, callable in self.event_listeners:
-                if event == "on_startup" or event is None:
-                    await callable(event="on_startup", websocket=websocket)
             while True:
                 response = await websocket.recv()
                 data = json.loads(response)
+                await self._send_event(data.get("type"), websocket, data)

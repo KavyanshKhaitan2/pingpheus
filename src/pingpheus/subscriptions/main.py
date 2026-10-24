@@ -5,7 +5,7 @@ from ..settings import app
 
 
 @app.event("message")
-async def message_received(logger, message):
+async def message_received(logger, message, event):
     actions = []
     async for pingphrase in PingPhrase.all():
         active = False
@@ -18,5 +18,4 @@ async def message_received(logger, message):
             channel=pingphrase.owner,
             text=f"{pingphrase.id} https://{message['team']}.slack.com/archives/{message['channel']}/p{message['ts'].replace('.', '')}",
         ))
-
     await asyncio.gather(*actions)

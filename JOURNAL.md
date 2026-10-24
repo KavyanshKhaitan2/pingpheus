@@ -11,10 +11,10 @@ I have FastAPI + Slack (basic stuff) already set up, I think I am ready to start
 I created this UI, as a starting point. I will now try and figure out how I can add this to the App Home.
 ![](image/20261019220739.png)
 
-# Mon Oct 19 2026 10:58:28 PM (UTC+05:30)
+## Mon Oct 19 2026 10:58:28 PM (UTC+05:30)
 Figured out how to add it to the app home :check-kavyansh:
 
-# Mon Oct 19 2026 11:16:34 PM (UTC+05:30)
+## Mon Oct 19 2026 11:16:34 PM (UTC+05:30)
 Created this cool-looking modal.
 ![](image/20261019231645.png)
 
@@ -46,3 +46,19 @@ I've refactored a the entire custom user-client thingy!
 Now the main implementation lives at `websockets.py` as a reusable `SlackWebsocketClient` class.
 
 This means the code is way cleaner and easier to understand now, as most of the stuff going on with websockets can be abstracted away.
+
+
+## Sat Oct 24 2026 07:51:53 PM (UTC+05:30) (9h 41m logged)
+Guh. This is so frustraiting. I am trying to figure out how to send mock requests to `/slack/events`, but Slack Bolt keeps refusing all the ways I try.
+
+I've decided to use a bit of LLMs to help with this. (sorry!)
+
+My LLM wrote one line in `hooks.py`. It added `"type": "event_callback"` (I forgot add it while I was copying params from the Slack docs)
+
+I've figured out everything that'd make the subscriptions work in channels the bot isn't in now!
+
+This wasnt exactly easy, but it was hacking, and it was quite fun too!
+
+Also, the subscriptions werent working even after `"type": "event_callback"` was added, that was because I didnt add the `team_id` param to the `event` payload I was sending off. Adding that made it work flawlessly.
+
+There is still a bit of work tho, for example, when **@Pingpheus** is in a public channel and a pingword gets triggered there, it'll trigger twice. I'll need to find a way to make sure the userbot doesnt temp subscribe to channels the bot is in, or check if the event payload (in the bot end) is from the userbot in a channel the bot is in.

@@ -1,3 +1,6 @@
+import hashlib
+import hmac
+from slack.signature.verifier import SignatureVerifier
 from collections.abc import AsyncGenerator
 from contextlib import asynccontextmanager
 
@@ -5,7 +8,7 @@ from fastapi import FastAPI, Request
 from slack_bolt.adapter.fastapi.async_handler import AsyncSlackRequestHandler
 from tortoise.contrib.fastapi import tortoise_exception_handlers
 
-from . import settings, views  # noqa
+from . import settings, subscriptions, views  # noqa
 from .settings import app
 
 
@@ -16,6 +19,7 @@ async def lifespan(api: FastAPI) -> AsyncGenerator[None]:
         yield
         # app teardown
     # db connections closed
+
 
 # Initialize Slack app and request handler
 
