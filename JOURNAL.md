@@ -62,3 +62,10 @@ This wasnt exactly easy, but it was hacking, and it was quite fun too!
 Also, the subscriptions werent working even after `"type": "event_callback"` was added, that was because I didnt add the `team_id` param to the `event` payload I was sending off. Adding that made it work flawlessly.
 
 There is still a bit of work tho, for example, when **@Pingpheus** is in a public channel and a pingword gets triggered there, it'll trigger twice. I'll need to find a way to make sure the userbot doesnt temp subscribe to channels the bot is in, or check if the event payload (in the bot end) is from the userbot in a channel the bot is in.
+
+## Sun Oct 25 2026 02:09:36 PM (UTC+05:30) (10h 41m logged)
+Exactly one more hour! So uhh anyways, I have refactored the code a bit (seperated the logic for getting the message link into another function)
+
+Also fixed the edgecase where when a pingword used to get triggered in a public channel where the bot is in, it would send two DMs for the same message!
+
+I fixed it by making the userbot send `'spoofed': True` along with the event, which is then detected. If the message is spoofed, the bot checks if it is itself in that public channel. Usually, when the bot is in the public channel, the event is a duplicate and is dropped.

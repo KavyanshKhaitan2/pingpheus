@@ -1,3 +1,4 @@
+import traceback
 import anyio
 import hashlib
 import hmac
@@ -51,37 +52,41 @@ async def connect_wss(event, websocket):
 
 @client.onevent("message")
 async def on_message(event, data):
-    if data.get('hidden', False):
-        return
-    if data.get('subtype') == 'bot_message':
-        return
-    
-    logger.debug("INCOMING: " + str(data))
-    api_app_id = (await app.client.auth_test())['app_id']
-    team_id = data.get('team') or data['source_team']
-    blocks = data.get("blocks") or data.get("message", {}).get("blocks")
+    try:
+        if data.get('hidden', False):
+            return
+        
+        logger.debug("INCOMING: " + str(data))
+        auth_test = await app.client.auth_test()
+        api_app_id = auth_test['app_id']
+        team_id = data.get('team') or data.get('source_team') or auth_test['team_id']
+        blocks = data.get("blocks") or data.get("message", {}).get("blocks")
 
-    outgoing = {
-        "token": "deprecated!",
-        "type": "event_callback",
-        "team_id": team_id,
-        "team": team_id,
-        "api_app_id": api_app_id,
-        "event": {
-            "type": "message",
-            "subtype": data.get("subtype"),
+        outgoing = {
+            "token": "deprecated!",
+            "type": "event_callback",
+            "team_id": team_id,
             "team": team_id,
-            "channel": data['channel'],
-            "user": data['user'],
-            "ts": data['ts'],
-            "channel_type": "channel",
-            "blocks": blocks,
-            "text": data["text"]
-        },
-        "client_msg_id": data.get("client_msg_id")
-    }
-    logger.debug("OUTGOING: " + str(outgoing))
-    await send_request(outgoing)
+            "api_app_id": api_app_id,
+            "event": {
+                "type": "message",
+                "subtype": data.get("subtype"),
+                "team": team_id,
+                "channel": data['channel'],
+                "user": data.get('user') or data['bot_id'],
+                "ts": data['ts'],
+                "channel_type": "channel",
+                "blocks": blocks,
+                "text": data["text"],
+                "spoofed": True
+            },
+            "client_msg_id": data.get("client_msg_id")
+        }
+        logger.debug("OUTGOING: " + str(outgoing))
+        await send_request(outgoing)
+    except Exception:
+        print(event, data)
+        raise
 
 async def send_request(data):
     raw_payload = json.dumps(data)
@@ -99,10 +104,14 @@ async def send_request(data):
     )
     headers = {"X-Slack-Request-Timestamp": timestamp, "X-Slack-Signature": signature, "Content-Type": "application/json", "User-Agent": "Slackbot 1.0 (+https://api.slack.com/robots)"}
     async with aiohttp.ClientSession() as session:  # noqa
-        async with session.post(
-            "http://localhost:8000/slack/events",
-            headers=headers,
-            data=raw_payload,
-        ) as response:
-            print("Status:", response.status)
-            print("Content-type:", response.headers["content-type"])
+        while True:
+            try:
+                async with session.post(
+                    "http://localhost:8000/slack/events",
+                    headers=headers,
+                    data=raw_payload,
+                ) as _:
+                    logger.debug("Sent successfully!")
+                break
+            except Exception: #  noqa
+                continue
