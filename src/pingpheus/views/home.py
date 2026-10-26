@@ -35,11 +35,11 @@ async def _open_app_home(user_id):
                     "type": "button",
                     "text": {
                         "type": "plain_text",
-                        "text": "Actions",
+                        "text": "Modify",
                         "emoji": True,
                     },
                     "value": str(phrase.id),
-                    "action_id": "apphome_pingphrase_action",
+                    "action_id": "apphome_pingphrase_modify",
                 },
             },
         )

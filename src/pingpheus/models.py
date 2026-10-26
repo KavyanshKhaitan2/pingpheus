@@ -1,3 +1,4 @@
+from tortoise.fields import BooleanField
 from tortoise import fields
 from tortoise.models import Model
 
@@ -11,6 +12,9 @@ class PingPhrase(Model):
 
     whitelisted_conversation_ids:fields.JSONField[list[str]] = fields.JSONField()
     whitelisted_user_ids:fields.JSONField[list[str]] = fields.JSONField()
+    
+    ping_from_people = BooleanField(db_default=True)
+    ping_from_apps = BooleanField(db_default=False)
 
 
 class PingPhraseTriggered(Model):

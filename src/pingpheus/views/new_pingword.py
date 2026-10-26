@@ -17,20 +17,27 @@ class PingwordModalState:
 
 
 def get_state_from_slack_view(
-    slack_view, ping_from_people=True, ping_from_apps=False
+    slack_view, ping_from_people=None, ping_from_apps=None
 ) -> PingwordModalState:
     slack_state = slack_view["state"]["values"]
 
     pingwords = [
         x.strip()
         for x in (
-            slack_state["apphome_new_pingword-pingwords"]["input"]["value"] or ""
+            slack_state["apphome_modify_pingword-pingwords"]["input"]["value"] or ""
         ).split(",")
     ]
-    conversations = slack_state["apphome_new_pingword-conversations"]["input"][
+    conversations = slack_state["apphome_modify_pingword-conversations"]["input"][
         "selected_conversations"
     ]
-    users = slack_state["apphome_new_pingword-users"]["input"]["selected_users"]
+
+    metadata = json.loads(slack_view["private_metadata"])
+    if ping_from_people is None:
+        ping_from_people: bool = metadata["ping_from_people"]
+    if ping_from_apps is None:
+        ping_from_apps: bool = metadata["ping_from_apps"]
+    
+    users = slack_state["apphome_modify_pingword-users"]["input"]["selected_users"]
     return PingwordModalState(
         pingwords=pingwords,
         conversation_ids=conversations,
@@ -192,15 +199,19 @@ async def toggle_ping_buttons(ack, body):
 async def submit_new_pingword_modal(ack, body, logger):
     await ack()
     slack_view = body["view"]
-    metadata = json.loads(slack_view["private_metadata"])
-    ping_from_people = metadata["ping_from_people"]
-    ping_from_apps = metadata["ping_from_apps"]
     state = get_state_from_slack_view(
-        slack_view, ping_from_people=ping_from_people, ping_from_apps=ping_from_apps
+        slack_view
     )
-    user_id = body['user']['id']
-    
-    pingphrase = models.PingPhrase(owner=user_id, comma_seperated_words = ','.join(state.pingwords), whitelisted_conversation_ids = state.conversation_ids, whitelisted_user_ids = state.user_ids)
+    user_id = body["user"]["id"]
+
+    pingphrase = models.PingPhrase(
+        owner=user_id,
+        comma_seperated_words=",".join(state.pingwords),
+        whitelisted_conversation_ids=state.conversation_ids,
+        whitelisted_user_ids=state.user_ids,
+        ping_from_people=state.ping_from_people,
+        ping_from_apps=state.ping_from_apps,
+    )
     await pingphrase.save()
     await _open_app_home(user_id)
     logger.info(f"<@{user_id}> has created a new pingphrase: {pingphrase}")

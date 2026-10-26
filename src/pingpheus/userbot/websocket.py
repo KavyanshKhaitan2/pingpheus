@@ -60,8 +60,12 @@ class SlackWebsocketClient:
     async def connect(self):
         url = await self.get_url()
         headers = await self.get_additional_headers()
-        async with websockets.connect(url, additional_headers=headers) as websocket:
-            while True:
-                response = await websocket.recv()
-                data = json.loads(response)
-                await self._send_event(data.get("type"), websocket, data)
+        while True:
+            try:
+                async with websockets.connect(url, additional_headers=headers) as websocket:
+                    while True:
+                        response = await websocket.recv()
+                        data = json.loads(response)
+                        await self._send_event(data.get("type"), websocket, data)
+            except websockets.exceptions.ConnectionClosedError:
+                logger.warning("WARNING: Websocket connection closed unexpectedly, restarting websocket...")

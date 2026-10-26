@@ -1,0 +1,230 @@
+import asyncio
+import json
+from dataclasses import dataclass
+
+from .. import models
+from ..settings import app
+from .home import _open_app_home
+
+
+@dataclass
+class PingwordModalState:
+    db_primary_key: int
+    pingwords: list[str]
+    conversation_ids: list[str]
+    user_ids: list[str]
+    ping_from_people: bool = True
+    ping_from_apps: bool = False
+
+
+def get_state_from_slack_view(
+    slack_view, ping_from_people=None, ping_from_apps=None
+) -> PingwordModalState:
+    slack_state = slack_view["state"]["values"]
+
+    pingwords = [
+        x.strip()
+        for x in (
+            slack_state["apphome_modify_pingword-pingwords"]["input"]["value"] or ""
+        ).split(",")
+    ]
+    conversations = slack_state["apphome_modify_pingword-conversations"]["input"][
+        "selected_conversations"
+    ]
+
+    metadata = json.loads(slack_view["private_metadata"])
+    db_primary_key:int = metadata["db_primary_key"]
+    if ping_from_people is None:
+        ping_from_people: bool = metadata["ping_from_people"]
+    if ping_from_apps is None:
+        ping_from_apps: bool = metadata["ping_from_apps"]
+    
+    users = slack_state["apphome_modify_pingword-users"]["input"]["selected_users"]
+    return PingwordModalState(
+        db_primary_key=db_primary_key,
+        pingwords=pingwords,
+        conversation_ids=conversations,
+        user_ids=users,
+        ping_from_people=ping_from_people,
+        ping_from_apps=ping_from_apps,
+    )
+
+
+def _draw_pingword_modal(state: PingwordModalState):
+    conversations_select = {
+        "type": "section",
+        "block_id": "apphome_modify_pingword-conversations",
+        "text": {
+            "type": "mrkdwn",
+            "text": "*Select conversations* _(optional)_\nOnly select if you want pingwords to activate in specific conversations",
+        },
+        "accessory": {
+            "type": "multi_conversations_select",
+            "placeholder": {
+                "type": "plain_text",
+                "text": "Select conversations",
+                "emoji": True,
+            },
+            "initial_conversations": state.conversation_ids,
+            "action_id": "input",
+        },
+    }
+    if not state.conversation_ids:
+        del conversations_select["accessory"]["initial_conversations"]
+
+    users_select = {
+        "type": "section",
+        "block_id": "apphome_modify_pingword-users",
+        "text": {
+            "type": "mrkdwn",
+            "text": "*Select users* _(optional)_\nOnly select if you want pingwords to activate when specific people send messages",
+        },
+        "accessory": {
+            "type": "multi_users_select",
+            "placeholder": {
+                "type": "plain_text",
+                "text": "Select users",
+                "emoji": True,
+            },
+            "initial_users": state.user_ids,
+            "action_id": "input",
+        },
+    }
+
+    if not state.user_ids:
+        del users_select["accessory"]["initial_users"]
+
+    return {
+        "type": "modal",
+        "callback_id": "modify_pingword_modal",
+        "title": {
+            "type": "plain_text",
+            "text": "Modify pingword",
+            "emoji": True,
+        },
+        "submit": {"type": "plain_text", "text": "Submit", "emoji": True},
+        "close": {"type": "plain_text", "text": "Cancel", "emoji": True},
+        "private_metadata": json.dumps(
+            {
+                "ping_from_people": state.ping_from_people,
+                "ping_from_apps": state.ping_from_apps,
+                "db_primary_key": state.db_primary_key
+            }
+        ),
+        "blocks": [
+            {
+                "type": "input",
+                "block_id": "apphome_modify_pingword-pingwords",
+                "element": {
+                    "type": "plain_text_input",
+                    "action_id": "input",
+                    "initial_value": ", ".join(state.pingwords),
+                },
+                "label": {
+                    "type": "plain_text",
+                    "text": "Pingwords - seperate by commas!",
+                    "emoji": True,
+                },
+                "optional": False,
+            },
+            conversations_select,
+            users_select,
+            {
+                "type": "rich_text",
+                "elements": [
+                    {
+                        "type": "rich_text_section",
+                        "elements": [
+                            {"type": "text", "text": "Who's allowed to ping?"}
+                        ],
+                    }
+                ],
+            },
+            {
+                "type": "actions",
+                "block_id": "apphome_modify_pingword-ping_from",
+                "elements": [
+                    {
+                        "type": "button",
+                        "text": {
+                            "type": "plain_text",
+                            "text": f"People: {'ON' if state.ping_from_people else 'OFF'}",
+                        },
+                        "style": "primary" if state.ping_from_people else "danger",
+                        "action_id": "apphome_modify_pingword-ping_from_people",
+                        "value": f"{not state.ping_from_people},{state.ping_from_apps}",
+                    },
+                    {
+                        "type": "button",
+                        "text": {
+                            "type": "plain_text",
+                            "text": f"Apps: {'ON' if state.ping_from_apps else 'OFF'}",
+                        },
+                        "style": "primary" if state.ping_from_apps else "danger",
+                        "action_id": "apphome_modify_pingword-ping_from_apps",
+                        "value": f"{state.ping_from_people},{not state.ping_from_apps}",
+                    },
+                ],
+            },
+        ],
+    }
+
+
+@app.action("apphome_pingphrase_modify")
+async def modify_pingword(ack, body):
+    db_primary_key = int(body['actions'][0]['value'])
+    phrase = await models.PingPhrase.get(id=db_primary_key)
+    state = PingwordModalState(
+        db_primary_key=db_primary_key,
+        pingwords=[x.strip() for x in phrase.comma_seperated_words.split(",")],
+        conversation_ids=phrase.whitelisted_conversation_ids,
+        user_ids=phrase.whitelisted_user_ids,
+        ping_from_people=phrase.ping_from_people,
+        ping_from_apps=phrase.ping_from_apps,
+    )
+    view = _draw_pingword_modal(state)
+    await asyncio.gather(
+        app.client.views_open(
+            # Pass a valid trigger_id within 3 seconds of receiving it
+            trigger_id=body["trigger_id"],
+            view=view,
+        ),
+        ack(),
+    )
+
+
+@app.action({"block_id": "apphome_modify_pingword-ping_from"})
+async def toggle_ping_buttons(ack, body):
+    ack()
+    
+    ping_from_people, ping_from_apps = [
+        x == "True" for x in body["actions"][0]["value"].split(",")
+    ]
+    state = get_state_from_slack_view(
+        body["view"], ping_from_people=ping_from_people, ping_from_apps=ping_from_apps
+    )
+    view = _draw_pingword_modal(state)
+    await app.client.views_update(view_id=body["view"]["id"], view=view)
+
+
+@app.view("modify_pingword_modal")
+async def submit_modify_pingword_modal(ack, body, logger):
+    await ack()
+    slack_view = body["view"]
+    state = get_state_from_slack_view(slack_view)
+    user_id = body["user"]["id"]
+
+    pingphrase = await models.PingPhrase.get(id=state.db_primary_key)
+    if pingphrase.owner != user_id:
+        return logger.error("Unauthorised: User has not been allowed to let through.")
+    
+    pingphrase.comma_seperated_words = ",".join(state.pingwords)
+    pingphrase.whitelisted_conversation_ids = state.conversation_ids
+    pingphrase.whitelisted_user_ids = state.user_ids
+    pingphrase.ping_from_people = state.ping_from_people
+    pingphrase.ping_from_apps = state.ping_from_apps
+
+    await pingphrase.save()
+    await _open_app_home(user_id)
+    
+    logger.info(f"<@{user_id}> has created a modify pingphrase: {pingphrase}")

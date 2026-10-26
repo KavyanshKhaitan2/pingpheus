@@ -1,5 +1,6 @@
 from ..settings import app
 from . import home as home
+from . import modify_pingword as modify_pingword
 from . import new_pingword as new_pingword
 
 

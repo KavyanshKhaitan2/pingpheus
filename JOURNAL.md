@@ -69,3 +69,10 @@ Exactly one more hour! So uhh anyways, I have refactored the code a bit (seperat
 Also fixed the edgecase where when a pingword used to get triggered in a public channel where the bot is in, it would send two DMs for the same message!
 
 I fixed it by making the userbot send `'spoofed': True` along with the event, which is then detected. If the message is spoofed, the bot checks if it is itself in that public channel. Usually, when the bot is in the public channel, the event is a duplicate and is dropped.
+
+## Mon Oct 26 2026 06:18:57 PM (UTC+05:30) (11h 30m logged)
+I added a way to modify pingwords, and also added the `ping_from_people` and `ping_from_apps` to the DB instead of it just being a visual thing.
+
+Also made the websocket restart if the websocket closes due to connection timeout
+
+Also did some refactoring :p

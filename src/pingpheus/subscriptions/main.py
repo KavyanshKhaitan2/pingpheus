@@ -17,10 +17,10 @@ async def message_received(logger, message, event, ack):
         for channel in channels_in:
             if channel['id'] == message['channel']:
                 return
-    
     async for pingphrase in PingPhrase.all():
         for phrase in pingphrase.comma_seperated_words.split(","):
-            if phrase.lower().strip() in message["text"].lower():
+            to_match = phrase.lower().strip()
+            if to_match in message["text"].lower() or to_match in str(message["blocks"]).lower():
                 data.setdefault(pingphrase.owner, [])
                 if phrase in data[pingphrase.owner]:
                     continue
